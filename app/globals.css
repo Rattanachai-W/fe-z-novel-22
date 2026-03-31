@@ -1,26 +1,182 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8faf8;
+  --foreground: #0f172a;
+  --surface: rgba(255, 255, 255, 0.86);
+  --surface-muted: #edf4ef;
+  --border: rgba(15, 23, 42, 0.1);
+  --muted: #526072;
+  --brand: #42b983;
+  --brand-strong: #2d9968;
+  --shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-code);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #06111d;
+    --foreground: #e2e8f0;
+    --surface: rgba(15, 23, 42, 0.78);
+    --surface-muted: rgba(30, 41, 59, 0.9);
+    --border: rgba(148, 163, 184, 0.16);
+    --muted: #9fb0c5;
+    --shadow: 0 24px 80px rgba(2, 6, 23, 0.35);
   }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--brand) 35%, white);
+  color: #052e16;
+}
+
+.glass-panel {
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(18px);
+  box-shadow: var(--shadow);
+}
+
+.card-surface {
+  border: 1px solid var(--border);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface) 94%, transparent),
+    color-mix(in srgb, var(--surface) 88%, transparent)
+  );
+  border-radius: 1.75rem;
+  box-shadow: var(--shadow);
+}
+
+.reading-prose p + p {
+  margin-top: 1.1rem;
+}
+
+.reading-prose p {
+  font-size: var(--reader-font-size, 18px);
+  line-height: 2;
+}
+
+.reading-prose strong {
+  color: var(--foreground);
+}
+
+.writer-preview {
+  background:
+    radial-gradient(circle at top right, rgba(66, 185, 131, 0.08), transparent 22%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.94));
+  color: var(--foreground);
+}
+
+.writer-editor-content,
+.writer-preview {
+  font-size: 1.03rem;
+  line-height: 2.05;
+  letter-spacing: 0.01em;
+}
+
+.writer-editor-content:focus {
+  background:
+    linear-gradient(180deg, rgba(66, 185, 131, 0.03), transparent 24%),
+    rgba(255, 255, 255, 0.96);
+}
+
+.writer-editor-content p,
+.writer-preview p {
+  margin: 0;
+}
+
+.writer-editor-content p + p,
+.writer-preview p + p {
+  margin-top: 1.15rem;
+}
+
+.writer-editor-content h2,
+.writer-preview h2 {
+  margin: 0 0 1rem;
+  margin-bottom: 1rem;
+  font-size: 1.8rem;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  border-bottom: 1px solid color-mix(in srgb, var(--brand) 18%, white);
+  padding-bottom: 0.75rem;
+}
+
+.writer-editor-content blockquote,
+.writer-preview blockquote {
+  margin: 1rem 0;
+  border-left: 4px solid color-mix(in srgb, var(--brand) 72%, white);
+  background: color-mix(in srgb, var(--surface-muted) 72%, white);
+  padding: 0.85rem 1rem;
+  border-radius: 0 1rem 1rem 0;
+  font-style: italic;
+  color: var(--muted);
+}
+
+.writer-editor-content ul,
+.writer-preview ul {
+  margin: 0.75rem 0 0;
+  padding-left: 1.4rem;
+}
+
+.writer-editor-content li,
+.writer-preview li {
+  margin-top: 0.45rem;
+}
+
+.writer-editor-content strong,
+.writer-preview strong {
+  color: color-mix(in srgb, var(--foreground) 92%, var(--brand) 8%);
+}
+
+.writer-editor-content em,
+.writer-preview em {
+  color: color-mix(in srgb, var(--foreground) 78%, var(--brand) 22%);
+}
+
+.writer-editor-content u,
+.writer-preview u {
+  text-underline-offset: 0.18em;
+}
+
+.writer-accent {
+  color: var(--brand-strong);
+  font-weight: 700;
+}
+
+.writer-preview-empty {
+  color: var(--muted);
 }
