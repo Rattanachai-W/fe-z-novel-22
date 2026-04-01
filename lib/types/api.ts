@@ -46,6 +46,8 @@ export interface Novel {
   Category?: Category;
   Tags?: Tag[];
   chapters?: Chapter[];
+  created_at: string;
+  updated_at: string;
 }
 
 export interface NovelMetadata {

@@ -57,6 +57,8 @@ export const mockNovels: Novel[] = [
       { id: "tag-reward", name: "รางวัลจริง" },
     ],
     chapters: demoChapters,
+    created_at: "2026-03-25T10:00:00.000Z",
+    updated_at: "2026-03-27T15:30:00.000Z",
   },
   {
     id: "demo-002",
@@ -90,6 +92,8 @@ export const mockNovels: Novel[] = [
         created_at: "2026-03-20T10:00:00.000Z",
       },
     ],
+    created_at: "2026-03-20T08:00:00.000Z",
+    updated_at: "2026-03-22T11:20:00.000Z",
   },
   {
     id: "demo-003",
@@ -122,6 +126,8 @@ export const mockNovels: Novel[] = [
         created_at: "2026-01-12T10:00:00.000Z",
       },
     ],
+    created_at: "2026-01-10T09:00:00.000Z",
+    updated_at: "2026-01-15T14:45:00.000Z",
   },
 ];
 

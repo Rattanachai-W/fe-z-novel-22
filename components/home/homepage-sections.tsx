@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { HeroCarousel } from "@/components/home/hero-carousel";
 import { getHomeBanners } from "@/lib/api/marketing";
 import { getFeaturedNovel, getNovelCatalog, getTrendingTags } from "@/lib/api/novels";
@@ -66,15 +67,25 @@ export async function HomepageSections({
                 href={`/novels/${novel.id}`}
                 className="group min-w-[10.5rem] flex-1 rounded-[1.35rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition hover:-translate-y-1 hover:border-[var(--color-brand)] sm:min-w-0 sm:rounded-[1.6rem] sm:p-4"
               >
-                <div className="flex aspect-[4/5] items-center justify-center rounded-[1.25rem] bg-[linear-gradient(135deg,_rgba(66,185,131,0.2),_rgba(15,23,42,0.06))] text-center">
-                  <div>
-                    <p className="font-mono text-xs uppercase tracking-[0.28em] text-[var(--color-brand)]">
-                      Image
-                    </p>
-                    <p className="mt-3 text-sm text-[var(--color-muted)]">
-                      Updated {index + 1}
-                    </p>
-                  </div>
+                <div className="relative flex aspect-[4/5] items-center justify-center overflow-hidden rounded-[1.25rem] bg-[linear-gradient(135deg,_rgba(66,185,131,0.2),_rgba(15,23,42,0.06))] text-center">
+                  {novel.cover_image_url ? (
+                    <Image
+                      src={novel.cover_image_url}
+                      alt={`หน้าปก ${novel.title}`}
+                      fill
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 15vw"
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div>
+                      <p className="font-mono text-xs uppercase tracking-[0.28em] text-[var(--color-brand)]">
+                        Image
+                      </p>
+                      <p className="mt-3 text-sm text-[var(--color-muted)]">
+                        Updated {index + 1}
+                      </p>
+                    </div>
+                  )}
                 </div>
                 <h3 className="mt-4 line-clamp-2 text-sm font-semibold tracking-tight group-hover:text-[var(--color-brand)] sm:text-base">
                   {novel.title}
@@ -109,15 +120,25 @@ export async function HomepageSections({
                   href={`/novels/${novel.id}`}
                   className="group min-w-[10.5rem] flex-1 rounded-[1.35rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition hover:-translate-y-1 hover:border-[var(--color-brand)] sm:min-w-0 sm:rounded-[1.6rem] sm:p-4"
                 >
-                  <div className="flex aspect-[4/5] items-center justify-center rounded-[1.25rem] bg-[linear-gradient(135deg,_rgba(66,185,131,0.18),_rgba(15,23,42,0.04))] text-center">
-                    <div>
-                      <p className="font-mono text-xs uppercase tracking-[0.28em] text-[var(--color-brand)]">
-                        Image
-                      </p>
-                      <p className="mt-3 text-sm text-[var(--color-muted)]">
-                        {novel.Category?.name ?? "Novel"}
-                      </p>
-                    </div>
+                  <div className="relative flex aspect-[4/5] items-center justify-center overflow-hidden rounded-[1.25rem] bg-[linear-gradient(135deg,_rgba(66,185,131,0.18),_rgba(15,23,42,0.04))] text-center">
+                    {novel.cover_image_url ? (
+                      <Image
+                        src={novel.cover_image_url}
+                        alt={`หน้าปก ${novel.title}`}
+                        fill
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 20vw"
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div>
+                        <p className="font-mono text-xs uppercase tracking-[0.28em] text-[var(--color-brand)]">
+                          Image
+                        </p>
+                        <p className="mt-3 text-sm text-[var(--color-muted)]">
+                          {novel.Category?.name ?? "Novel"}
+                        </p>
+                      </div>
+                    )}
                   </div>
                   <h3 className="mt-4 line-clamp-2 text-sm font-semibold tracking-tight group-hover:text-[var(--color-brand)] sm:text-base">
                     {novel.title}
@@ -146,11 +167,10 @@ export async function HomepageSections({
               <button
                 key={label}
                 type="button"
-                className={`rounded-xl px-3 py-2 text-sm font-medium ${
-                  index === 1
+                className={`rounded-xl px-3 py-2 text-sm font-medium ${index === 1
                     ? "bg-[var(--color-foreground)] text-[var(--color-background)]"
                     : "border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-muted)]"
-                }`}
+                  }`}
               >
                 {label}
               </button>
@@ -202,13 +222,16 @@ export async function HomepageSections({
 
 function mapEntryToHeroBanner(entry: Banner | Novel) {
   const isMarketingBanner = "link_url" in entry || "novel_id" in entry || "Novel" in entry;
-  const relatedNovel = isMarketingBanner ? entry.Novel : entry;
-  const id = isMarketingBanner ? entry.novel_id || entry.id : entry.id;
+  const asBanner = entry as Banner;
+  const asNovel = entry as Novel;
+  
+  const relatedNovel = isMarketingBanner ? asBanner.Novel : asNovel;
+  const id = isMarketingBanner ? asBanner.novel_id || asBanner.id : asNovel.id;
   const title =
-    isMarketingBanner && entry.title ? entry.title : relatedNovel?.title ?? "Dino Banner";
+    isMarketingBanner && asBanner.title ? asBanner.title : relatedNovel?.title ?? "Dino Banner";
   const description =
-    isMarketingBanner && entry.description
-      ? entry.description
+    isMarketingBanner && asBanner.description
+      ? asBanner.description
       : relatedNovel?.description ?? "พบเรื่องเด่นและอัปเดตใหม่ล่าสุดใน DinoNovel";
   const accentKey =
     id === "demo-001" || entry.id === "banner-001"
@@ -220,19 +243,19 @@ function mapEntryToHeroBanner(entry: Banner | Novel) {
   return {
     id,
     href:
-      (isMarketingBanner ? entry.link_url : undefined) ||
+      (isMarketingBanner ? asBanner.link_url : undefined) ||
       (id ? `/novels/${id}` : "/"),
     title,
     description,
-    imageUrl: isMarketingBanner ? entry.image_url : undefined,
-    mobileImageUrl: isMarketingBanner ? entry.mobile_image_url : undefined,
+    imageUrl: isMarketingBanner ? asBanner.image_url : undefined,
+    mobileImageUrl: isMarketingBanner ? asBanner.mobile_image_url : undefined,
     imageAlt:
-      (isMarketingBanner ? entry.image_alt : undefined) ||
+      (isMarketingBanner ? asBanner.image_alt : undefined) ||
       title,
     viewCount: relatedNovel?.view_count ?? 0,
     authorName: relatedNovel?.author?.username ?? "ทีม Dino",
     categoryName:
-      (isMarketingBanner ? entry.zone : undefined) ||
+      (isMarketingBanner ? asBanner.zone : undefined) ||
       relatedNovel?.Category?.name ||
       "Dino Pick",
     accent: accentKey === "pink" ? "#f79ec7" : accentKey === "blue" ? "#7dd3fc" : "#fb923c",

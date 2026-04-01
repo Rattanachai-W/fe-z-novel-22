@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api/client";
+import { apiFetch, safeArray } from "@/lib/api/client";
 import { mockHomeMetrics, mockNovels, mockTags } from "@/lib/data/mock";
 import type {
   AuthorProfile,
@@ -21,7 +21,7 @@ export async function getNovelCatalog(filters: CatalogFilters = {}) {
     fallbackData: mockNovels,
   });
 
-  return novels.filter((novel) => {
+  return safeArray<Novel>(novels).filter((novel) => {
     const categoryMatches = filters.category
       ? novel.category_id === filters.category || novel.Category?.id === filters.category
       : true;

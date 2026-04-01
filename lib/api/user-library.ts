@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api/client";
+import { apiFetch, safeArray } from "@/lib/api/client";
 import type { Novel } from "@/lib/types/api";
 
 export async function getBookmarks(token: string) {
@@ -9,7 +9,7 @@ export async function getBookmarks(token: string) {
     fallbackData: [],
   });
 
-  return novels.map((novel) => novel.id);
+  return safeArray<Novel>(novels).map((novel) => novel.id);
 }
 
 export async function toggleBookmark(token: string, novelId: string) {

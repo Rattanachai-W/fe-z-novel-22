@@ -32,45 +32,12 @@ export function SiteHeader({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { globalMessage, openAuthModal, logout, user, wallet, walletPending } = useApp();
-  const [isHiddenOnScroll, setIsHiddenOnScroll] = useState(false);
 
   const isReaderPage = pathname.includes("/chapters/");
-  const readerViewport = useMaybeReaderViewport();
-  const chromeVisible = readerViewport?.chromeVisible ?? true;
-  const shouldHideReaderChrome = isReaderPage && !chromeVisible;
-
-  useEffect(() => {
-    if (!isReaderPage) {
-      setIsHiddenOnScroll(false);
-      return;
-    }
-
-    let lastScrollY = window.scrollY;
-
-    const onScroll = () => {
-      const currentScrollY = window.scrollY;
-      const isScrollingDown = currentScrollY > lastScrollY;
-      const passedThreshold = currentScrollY > 96;
-
-      setIsHiddenOnScroll(isScrollingDown && passedThreshold);
-      if (isScrollingDown && passedThreshold) {
-        readerViewport?.setChromeVisible(false);
-      }
-      lastScrollY = currentScrollY;
-    };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [isReaderPage, readerViewport]);
 
   return (
     <>
-      <header
-        className={`glass-panel sticky top-3 z-30 rounded-[1.35rem] px-3 py-3 transition-transform duration-300 sm:top-4 sm:rounded-[1.6rem] sm:px-4 ${
-          isHiddenOnScroll || shouldHideReaderChrome ? "-translate-y-[140%]" : "translate-y-0"
-        }`}
-      >
+      <header className="glass-panel z-30 rounded-[1.35rem] px-3 py-3 sm:rounded-[1.6rem] sm:px-4">
         <div className="flex items-center justify-between gap-2 sm:gap-3">
           <Link href="/" className="flex min-w-0 items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(180deg,_#7c4dff,_#5d52ff)] text-lg font-bold text-white">
@@ -184,6 +151,15 @@ export function SiteHeader({
                         </div>
                       ))}
                     </div>
+
+                    <Menu.Item value="top-up" asChild>
+                      <Link
+                        href="/top-up"
+                        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-brand)] px-3 py-2.5 text-sm font-bold text-white shadow-[0_4px_10px_rgba(66,185,131,0.3)] transition hover:-translate-y-0.5 hover:bg-[#3ba273]"
+                      >
+                        🪙 เติมเหรียญ
+                      </Link>
+                    </Menu.Item>
                   </div>
 
                   <div className="px-1 py-2 xl:hidden">

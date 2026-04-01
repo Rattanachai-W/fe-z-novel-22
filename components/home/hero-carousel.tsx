@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Carousel } from "@ark-ui/react/carousel";
 
@@ -61,44 +62,50 @@ export function HeroCarousel({ banners }: HeroCarouselProps) {
     >
       <div className="relative">
         <Carousel.ItemGroup className="flex gap-3 overflow-hidden sm:gap-4">
-            {banners.map((banner, index) => (
-              <Carousel.Item
-                key={banner.id}
-                index={index}
-                className="min-w-0"
+          {banners.map((banner, index) => (
+            <Carousel.Item
+              key={banner.id}
+              index={index}
+              className="min-w-0"
+            >
+              <Link
+                href={banner.href}
+                className="card-surface group relative block min-h-[220px] overflow-hidden rounded-[1.5rem] sm:min-h-[280px] sm:rounded-[1.75rem]"
               >
-                <Link
-                  href={banner.href}
-                  className="card-surface group relative block min-h-[220px] overflow-hidden rounded-[1.5rem] sm:min-h-[280px] sm:rounded-[1.75rem]"
-                >
-                  {banner.imageUrl ? (
-                    <>
-                      <div className="absolute inset-0 sm:hidden">
-                        <img
-                          src={banner.mobileImageUrl || banner.imageUrl}
-                          alt={banner.imageAlt || banner.title}
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                      <div className="absolute inset-0 hidden sm:block">
-                        <img
-                          src={banner.imageUrl}
-                          alt={banner.imageAlt || banner.title}
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <div
-                      className="absolute inset-0"
-                      style={{
-                        background: `radial-gradient(circle at top right, ${banner.glow}, transparent 30%), linear-gradient(135deg, rgba(255,255,255,0.14), transparent 60%), ${banner.panel}`,
-                      }}
-                    />
-                  )}
-                </Link>
-              </Carousel.Item>
-            ))}
+                {banner.imageUrl ? (
+                  <>
+                    <div className="absolute inset-0 sm:hidden">
+                      <Image
+                        src={banner.mobileImageUrl || banner.imageUrl}
+                        alt={banner.imageAlt || banner.title}
+                        fill
+                        sizes="100vw"
+                        priority={index === 0}
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="absolute inset-0 hidden sm:block">
+                      <Image
+                        src={banner.imageUrl}
+                        alt={banner.imageAlt || banner.title}
+                        fill
+                        sizes="(max-width: 1280px) 50vw, 33vw"
+                        priority={index === 0}
+                        className="object-cover"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      background: `radial-gradient(circle at top right, ${banner.glow}, transparent 30%), linear-gradient(135deg, rgba(255,255,255,0.14), transparent 60%), ${banner.panel}`,
+                    }}
+                  />
+                )}
+              </Link>
+            </Carousel.Item>
+          ))}
         </Carousel.ItemGroup>
 
         <Carousel.Control>

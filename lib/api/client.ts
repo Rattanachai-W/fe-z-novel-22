@@ -60,3 +60,22 @@ async function tryJson(response: Response) {
     return null;
   }
 }
+
+/**
+ * Ensures a value is an array, or tries to find an array inside common API response patterns.
+ * Useful for handling { data: [...] }, { novels: [...] }, etc.
+ */
+export function safeArray<T>(data: any): T[] {
+  if (Array.isArray(data)) {
+    return data;
+  }
+  
+  if (data && typeof data === "object") {
+    // Try common wrappers
+    if (Array.isArray(data.data)) return data.data;
+    if (Array.isArray(data.novels)) return data.novels;
+    if (Array.isArray(data.items)) return data.items;
+  }
+  
+  return [];
+}

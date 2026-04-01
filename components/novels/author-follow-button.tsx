@@ -11,8 +11,10 @@ type AuthorFollowButtonProps = {
 
 export function AuthorFollowButton({
   authorId,
-  authorName,
-}: AuthorFollowButtonProps) {
+}: {
+  authorId: string;
+  authorName?: string; // made optional as we don't use it in text anymore
+}) {
   const { token, requireAuth } = useApp();
   const [followed, setFollowed] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -66,13 +68,14 @@ export function AuthorFollowButton({
           }
         });
       }}
-      className="rounded-full border border-[var(--color-border)] px-5 py-3 text-sm font-semibold"
+      className="rounded-full border border-[var(--color-brand)] px-3 py-1 text-xs font-semibold text-[var(--color-brand)] transition hover:bg-[var(--color-brand)] hover:text-white disabled:opacity-50"
+      disabled={isPending}
     >
       {isPending
-        ? "กำลังอัปเดต..."
+        ? "..."
         : loaded && followed
-          ? `ติดตาม ${authorName} แล้ว`
-          : `ติดตาม ${authorName}`}
+          ? `ติดตามแล้ว`
+          : `ติดตามนักเขียน`}
     </button>
   );
 }
