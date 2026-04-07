@@ -1,4 +1,5 @@
 import Script from "next/script";
+import { Analytics } from "@vercel/analytics/react";
 import { AuthModal } from "@/components/auth/auth-modal";
 import { AppProvider } from "@/components/providers/app-provider";
 import type { Metadata } from "next";
@@ -73,6 +74,7 @@ export default function RootLayout({
           {children}
           <AuthModal />
         </AppProvider>
+        <Analytics />
       </body>
     </html>
   );

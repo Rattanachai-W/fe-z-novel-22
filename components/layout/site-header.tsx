@@ -47,9 +47,9 @@ export function SiteHeader({
               <p className="truncate text-base font-semibold tracking-tight text-slate-900 sm:text-lg dark:text-slate-50">
                 DinoNovel
               </p>
-              <p className="truncate text-xs text-[var(--color-muted)]">
+              {/* <p className="truncate text-xs text-[var(--color-muted)]">
                 mobile-first reading platform
-              </p>
+              </p> */}
             </div>
           </Link>
 
