@@ -10,7 +10,7 @@ export function LandingPage() {
     "name": "DinoNovel",
     "url": "https://dinonovel.com",
     "logo": "https://dinonovel.com/dino_mascot.png",
-    "description": "แพลตฟอร์มนิยายออนไลน์ที่รวมความสนุกของการอ่านเข้ากับระบบของรางวัลจริงและ Gacha",
+    "description": "แพลตฟอร์มนิยายออนไลน์ที่รวมความสนุกของการอ่านเข้ากับระบบของรางวัลจริงและ Gacha ",
     "sameAs": [
       "https://facebook.com/dinonovel",
       "https://twitter.com/dinonovel"
