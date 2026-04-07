@@ -1,5 +1,6 @@
 import Script from "next/script";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { AuthModal } from "@/components/auth/auth-modal";
 import { AppProvider } from "@/components/providers/app-provider";
 import type { Metadata } from "next";
@@ -75,6 +76,7 @@ export default function RootLayout({
           <AuthModal />
         </AppProvider>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
