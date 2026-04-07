@@ -1,5 +1,5 @@
 import Script from "next/script";
-import { Analytics } from "@vercel/analytics/react";
+import { Analytics } from "@vercel/analytics/next";
 import { AuthModal } from "@/components/auth/auth-modal";
 import { AppProvider } from "@/components/providers/app-provider";
 import type { Metadata } from "next";
