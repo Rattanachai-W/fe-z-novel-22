@@ -1,3 +1,4 @@
+import Script from "next/script";
 import { AuthModal } from "@/components/auth/auth-modal";
 import { AppProvider } from "@/components/providers/app-provider";
 import type { Metadata } from "next";
@@ -48,7 +49,26 @@ export default function RootLayout({
       data-scroll-behavior="smooth"
       className={`${notoSansThai.variable} ${ibmPlexMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-[var(--color-background)] text-[var(--color-foreground)]">
+      <body className="min-h-full bg-(--color-background) text-(--color-foreground)">
+        <Script id="theme-init" strategy="beforeInteractive">
+          {`(function() {
+            try {
+              var storedTheme = window.localStorage.getItem('dino_theme');
+              var nextTheme =
+                storedTheme === 'light' || storedTheme === 'dark'
+                  ? storedTheme
+                  : window.matchMedia('(prefers-color-scheme: dark)').matches
+                  ? 'dark'
+                  : 'light';
+
+              document.documentElement.classList.toggle('dark', nextTheme === 'dark');
+              document.documentElement.classList.toggle('light', nextTheme === 'light');
+            } catch (error) {
+              console.error(error);
+            }
+          })();`}
+        </Script>
+
         <AppProvider>
           {children}
           <AuthModal />

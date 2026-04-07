@@ -16,6 +16,7 @@ import {
   FiSun,
   FiTrash2,
   FiType,
+  FiExternalLink,
 } from "react-icons/fi";
 
 type AppIconName =
@@ -32,7 +33,8 @@ type AppIconName =
   | "sun"
   | "eye"
   | "trash"
-  | "ellipsis";
+  | "ellipsis"
+  | "external";
 
 type AppIconProps = {
   name: AppIconName;
@@ -54,6 +56,7 @@ const iconMap: Record<AppIconName, IconType> = {
   eye: FiEye,
   trash: FiTrash2,
   ellipsis: FiMenu,
+  external: FiExternalLink,
 };
 
 export function AppIcon({ name, className = "h-4 w-4" }: AppIconProps) {

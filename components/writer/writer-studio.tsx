@@ -7,8 +7,10 @@ import { Menu } from "@ark-ui/react/menu";
 import { useApp } from "@/components/providers/app-provider";
 import { AppIcon } from "@/components/ui/app-icon";
 import { NovelEditModal } from "@/components/writer/novel-edit-modal";
-import { createNovel, deleteNovel, updateNovel, uploadNovelCover } from "@/lib/api/writer";
+import { createNovel, deleteNovel, updateNovel, uploadNovelCover, createChapter } from "@/lib/api/writer";
 import type { WriterNovelItem } from "@/lib/writer/dashboard";
+import { getNewNovelTemplate, formatShortDate, formatKycStatus, formatWithdrawalStatus } from "@/lib/writer/utils";
+import { EarningsChart } from "@/components/writer/earnings-chart";
 
 type WriterStudioProps = {
   mode: "novels" | "profile" | "earnings";
@@ -37,7 +39,7 @@ const novelsPerPage = 6;
 export function WriterStudio({ mode, novels }: WriterStudioProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { openAuthModal, token, user } = useApp();
+  const { openAuthModal, requireAuth, token, user } = useApp();
   const [managedNovels, setManagedNovels] = useState(novels);
   const [segment, setSegment] = useState<"all" | "ongoing" | "completed">("all");
   const [searchValue, setSearchValue] = useState("");
@@ -45,6 +47,7 @@ export function WriterStudio({ mode, novels }: WriterStudioProps) {
   const [novelsPage, setNovelsPage] = useState(1);
   const [selectedNovelId, setSelectedNovelId] = useState(novels[0]?.id ?? "");
   const [editingNovelId, setEditingNovelId] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [novelPending, startNovelTransition] = useTransition();
@@ -66,6 +69,7 @@ export function WriterStudio({ mode, novels }: WriterStudioProps) {
   const [incomeNovelId, setIncomeNovelId] = useState("all");
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawNote, setWithdrawNote] = useState("");
+  const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
   const [withdrawRequests, setWithdrawRequests] = useState<WithdrawalItem[]>([
     { id: "wd-001", amount: "1200.00", status: "pending", requestedAt: new Date().toISOString(), note: "ยอดเดือนนี้รอบแรก" },
     { id: "wd-000", amount: "980.00", status: "transferred", requestedAt: "2026-02-28T09:10:00.000Z", note: "โอนแล้ว" },
@@ -90,15 +94,13 @@ export function WriterStudio({ mode, novels }: WriterStudioProps) {
     if (novelsPage > totalNovelPages) setNovelsPage(totalNovelPages);
   }, [novelsPage, totalNovelPages]);
   const selectedNovel = managedNovels.find((novel) => novel.id === selectedNovelId) ?? filteredNovels[0] ?? managedNovels[0];
-  const editingNovel = managedNovels.find((novel) => novel.id === editingNovelId) ?? null;
+  const editingNovel = managedNovels.find((novel) => novel.id === editingNovelId) ?? (isCreating ? getNewNovelTemplate(user?.username) : null);
   const summary = useMemo(() => getSummary(managedNovels), [managedNovels]);
   const incomeRows = useMemo(() => getIncomeRows(managedNovels, incomeNovelId), [managedNovels, incomeNovelId]);
   const incomeSummary = useMemo(() => getIncomeSummary(incomeRows, withdrawRequests), [incomeRows, withdrawRequests]);
 
   function ensureAuthenticated() {
-    if (token) return true;
-    openAuthModal("login");
-    return false;
+    return requireAuth();
   }
 
   async function handleCreateCoverUpload(event: ChangeEvent<HTMLInputElement>) {
@@ -147,14 +149,43 @@ export function WriterStudio({ mode, novels }: WriterStudioProps) {
   async function handleSaveNovelEdit(nextNovel: WriterNovelItem) {
     if (!ensureAuthenticated() || !token) return;
     try {
-      const latestChapter = [...nextNovel.chapters].sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())[0];
-      const normalizedNovel: WriterNovelItem = { ...nextNovel, chapterCount: nextNovel.chapters.length, latestChapterTitle: latestChapter?.title ?? "ยังไม่มีตอน", updatedLabel: latestChapter ? formatShortDate(latestChapter.createdAt) : "ยังไม่มีการอัปเดต" };
-      const response = await updateNovel(token, nextNovel.id, { title: normalizedNovel.title, description: normalizedNovel.description, cover_image_url: normalizedNovel.coverImageUrl || undefined, category_id: undefined, tags: normalizedNovel.tags, status: normalizedNovel.published ? normalizedNovel.status : "on_hold" });
-      setManagedNovels((current) => current.map((item) => (item.id === normalizedNovel.id ? normalizedNovel : item)));
-      setMessage(response.message);
-      setEditingNovelId(null);
+      const isNew = nextNovel.id.startsWith("draft-");
+      if (isNew) {
+        const response = await createNovel(token, {
+          title: nextNovel.title,
+          description: nextNovel.description,
+          cover_image_url: nextNovel.coverImageUrl || undefined,
+          category_id: undefined, // Will use default category from API or keep as is
+          tags: nextNovel.tags,
+        });
+
+        const newNovelId = response.novel.id;
+
+        // If chapters were added in the draft mode, create them now
+        for (const chap of nextNovel.chapters) {
+          await createChapter(token, {
+            novel_id: newNovelId,
+            chapter_number: chap.chapterNumber,
+            title: chap.title,
+            content: chap.content,
+            is_free: chap.isFree,
+            coin_price: chap.coinPrice,
+          });
+        }
+
+        setMessage("สร้างนิยายใหม่สำเร็จแล้ว!");
+        setIsCreating(false);
+        router.refresh();
+      } else {
+        const latestChapter = [...nextNovel.chapters].sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())[0];
+        const normalizedNovel: WriterNovelItem = { ...nextNovel, chapterCount: nextNovel.chapters.length, latestChapterTitle: latestChapter?.title ?? "ยังไม่มีตอน", updatedLabel: latestChapter ? formatShortDate(latestChapter.createdAt) : "ยังไม่มีการอัปเดต" };
+        const response = await updateNovel(token, nextNovel.id, { title: normalizedNovel.title, description: normalizedNovel.description, cover_image_url: normalizedNovel.coverImageUrl || undefined, category_id: undefined, tags: normalizedNovel.tags, status: normalizedNovel.published ? normalizedNovel.status : "on_hold" });
+        setManagedNovels((current) => current.map((item) => (item.id === normalizedNovel.id ? normalizedNovel : item)));
+        setMessage(response.message);
+        setEditingNovelId(null);
+      }
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "บันทึกการแก้ไขนิยายไม่สำเร็จ");
+      setError(saveError instanceof Error ? saveError.message : "บันทึกไม่สำเร็จ");
     }
   }
 
@@ -189,6 +220,7 @@ export function WriterStudio({ mode, novels }: WriterStudioProps) {
     ]);
     setWithdrawAmount("");
     setWithdrawNote("");
+    setIsWithdrawModalOpen(false);
     setMessage("ส่งคำขอถอนเงินแล้ว");
   }
 
@@ -200,12 +232,22 @@ export function WriterStudio({ mode, novels }: WriterStudioProps) {
       <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
         {renderSidebar(pathname, user?.username, token, isWriter, () => openAuthModal("login"))}
         <section className="card-surface overflow-hidden p-4 sm:p-5">
-          {mode === "novels" ? renderNovelsPanel(paginatedNovels, filteredNovels.length, novelsPage, totalNovelPages, setNovelsPage, segment, setSegment, searchValue, setSearchValue, sortValue, setSortValue, selectedNovel?.id ?? "", setSelectedNovelId, setEditingNovelId, handleDeleteNovel, summary) : null}
+          {mode === "novels" ? renderNovelsPanel(paginatedNovels, filteredNovels.length, novelsPage, totalNovelPages, setNovelsPage, segment, setSegment, searchValue, setSearchValue, sortValue, setSortValue, selectedNovel?.id ?? "", setSelectedNovelId, setEditingNovelId, handleDeleteNovel, summary, () => setIsCreating(true)) : null}
           {mode === "profile" ? renderProfilePanel({ writerDisplayName, setWriterDisplayName, legalName, setLegalName, citizenId, setCitizenId, bankName, setBankName, bankAccountName, setBankAccountName, bankAccountNumber, setBankAccountNumber, taxId, setTaxId, kycStatus, onSubmit: handleSaveProfile }) : null}
-          {mode === "earnings" ? renderEarningsPanel({ monthValue: incomeMonth, setMonthValue: setIncomeMonth, novelId: incomeNovelId, setNovelId: setIncomeNovelId, novels: managedNovels, rows: incomeRows, summary: incomeSummary, withdrawAmount, setWithdrawAmount, withdrawNote, setWithdrawNote, withdrawRequests, onWithdraw: handleWithdraw }) : null}
+          {mode === "earnings" ? renderEarningsPanel({ monthValue: incomeMonth, setMonthValue: setIncomeMonth, novelId: incomeNovelId, setNovelId: setIncomeNovelId, novels: managedNovels, rows: incomeRows, summary: incomeSummary, withdrawAmount, setWithdrawAmount, withdrawNote, setWithdrawNote, withdrawRequests, onWithdraw: handleWithdraw, onOpenWithdraw: () => setIsWithdrawModalOpen(true) }) : null}
         </section>
       </div>
-      <NovelEditModal open={Boolean(editingNovel)} novel={editingNovel} onClose={() => setEditingNovelId(null)} onSave={handleSaveNovelEdit} />
+      <NovelEditModal open={Boolean(editingNovel)} novel={editingNovel} onClose={() => { setEditingNovelId(null); setIsCreating(false); }} onSave={handleSaveNovelEdit} />
+      <WithdrawalModal 
+        open={isWithdrawModalOpen} 
+        onClose={() => setIsWithdrawModalOpen(false)} 
+        amount={withdrawAmount}
+        setAmount={setWithdrawAmount}
+        note={withdrawNote}
+        setNote={setWithdrawNote}
+        available={incomeSummary.available}
+        onSubmit={handleWithdraw}
+      />
     </section>
   );
 }
@@ -340,6 +382,7 @@ function renderNovelsPanel(
   onEditNovel: (id: string) => void,
   onDeleteNovel: (id: string) => Promise<void>,
   summary: { totalViews: number; totalReviews: number; totalBookmarks: number; support: string },
+  onAddNovel: () => void,
 ) {
   return (
     <div className="space-y-5">
@@ -362,7 +405,7 @@ function renderNovelsPanel(
           <option value="views">เรียงตามยอดวิว</option>
           <option value="chapters">เรียงตามจำนวนตอน</option>
         </select>
-        <a href="#create-novel" className="rounded-[1rem] bg-[var(--color-brand)] px-4 py-3 text-center text-sm font-semibold text-white">+ เพิ่มผลงาน</a>
+        <button type="button" onClick={onAddNovel} className="rounded-[1rem] bg-[var(--color-brand)] px-4 py-3 text-center text-sm font-semibold text-white">+ เพิ่มผลงาน</button>
       </div>
       <div className="grid gap-4 xl:grid-cols-2">
         {novels.map((novel) => renderNovelCard(novel, novel.id === selectedNovelId, onSelectNovel, onEditNovel, onDeleteNovel))}
@@ -401,7 +444,8 @@ function renderNovelCard(
           <Menu.Trigger className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-muted)] text-[var(--color-brand-strong)]"><AppIcon name="ellipsis" /></Menu.Trigger>
           <Menu.Positioner>
             <Menu.Content className="z-50 min-w-[12rem] rounded-[1.2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-2 shadow-[0_24px_60px_rgba(15,23,42,0.18)]">
-              <Menu.Item value={`${novel.id}-edit`} onSelect={() => onEditNovel(novel.id)} className="flex cursor-pointer items-center gap-3 rounded-[0.9rem] px-3 py-2.5 text-sm font-medium hover:bg-[var(--color-surface-muted)]"><AppIcon name="pen" className="h-4 w-4" />แก้ไข</Menu.Item>
+              <Menu.Item value={`${novel.id}-edit`} onSelect={() => onEditNovel(novel.id)} className="flex cursor-pointer items-center gap-3 rounded-[0.9rem] px-3 py-2.5 text-sm font-medium hover:bg-[var(--color-surface-muted)]"><AppIcon name="pen" className="h-4 w-4" />แก้ไข (Modal)</Menu.Item>
+              <Menu.Item value={`${novel.id}-edit-page`} asChild><Link href={`/writer/novels/${novel.id}/edit`} className="flex items-center gap-3 rounded-[0.9rem] px-3 py-2.5 text-sm font-medium hover:bg-[var(--color-surface-muted)]"><AppIcon name="external" className="h-4 w-4" />แก้ไข (หน้าแยก)</Link></Menu.Item>
               <Menu.Item value={`${novel.id}-read`} asChild><Link href={readerHref} className="flex items-center gap-3 rounded-[0.9rem] px-3 py-2.5 text-sm font-medium hover:bg-[var(--color-surface-muted)]"><AppIcon name="eye" className="h-4 w-4" />เปิดหน้าอ่าน</Link></Menu.Item>
               <Menu.Item value={`${novel.id}-delete`} onSelect={() => void onDeleteNovel(novel.id)} className="flex cursor-pointer items-center gap-3 rounded-[0.9rem] px-3 py-2.5 text-sm font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"><AppIcon name="trash" className="h-4 w-4" />ลบเรื่องนี้</Menu.Item>
             </Menu.Content>
@@ -441,11 +485,10 @@ function renderNovelPagination(
             key={pageNumber}
             type="button"
             onClick={() => setCurrentPage(pageNumber)}
-            className={`min-w-10 rounded-[0.9rem] px-3 py-2 text-sm font-semibold transition ${
-              currentPage === pageNumber
+            className={`min-w-10 rounded-[0.9rem] px-3 py-2 text-sm font-semibold transition ${currentPage === pageNumber
                 ? "bg-[var(--color-brand)] text-white"
                 : "border border-[var(--color-border)] text-[var(--color-muted)]"
-            }`}
+              }`}
           >
             {pageNumber}
           </button>
@@ -487,15 +530,30 @@ function renderProfilePanel(props: { writerDisplayName: string; setWriterDisplay
   );
 }
 
-function renderEarningsPanel(props: { monthValue: string; setMonthValue: (value: string) => void; novelId: string; setNovelId: (value: string) => void; novels: WriterNovelItem[]; rows: Array<{ id: string; title: string; readers: number; unlocks: number; gross: number; net: number }>; summary: { gross: string; net: string; available: string }; withdrawAmount: string; setWithdrawAmount: (value: string) => void; withdrawNote: string; setWithdrawNote: (value: string) => void; withdrawRequests: WithdrawalItem[]; onWithdraw: (event: FormEvent<HTMLFormElement>) => void }) {
+function renderEarningsPanel(props: { monthValue: string; setMonthValue: (value: string) => void; novelId: string; setNovelId: (value: string) => void; novels: WriterNovelItem[]; rows: Array<{ id: string; title: string; readers: number; unlocks: number; gross: number; net: number }>; summary: { gross: string; net: string; available: string }; withdrawAmount: string; setWithdrawAmount: (value: string) => void; withdrawNote: string; setWithdrawNote: (value: string) => void; withdrawRequests: WithdrawalItem[]; onWithdraw: (event: FormEvent<HTMLFormElement>) => void; onOpenWithdraw: () => void }) {
   return (
     <div className="space-y-5">
-      <SectionHead eyebrow="Revenue" title="รายได้" description="ดูสถิติรายได้รายเดือน ฟิลเตอร์ตามนิยาย และจัดการคำขอถอนเงินจากหน้าเดียว" />
+      <SectionHead 
+        eyebrow="Revenue" 
+        title="รายได้" 
+        description="ดูสถิติรายได้รายเดือน ฟิลเตอร์ตามนิยาย และจัดการคำขอถอนเงินจากหน้าเดียว" 
+        action={
+          <button 
+            type="button" 
+            onClick={props.onOpenWithdraw}
+            className="rounded-[1rem] bg-[var(--color-brand)] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:scale-105"
+          >
+            ถอนเงิน
+          </button>
+        }
+      />
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard label="รายรับรวม" value={props.summary.gross} />
         <StatCard label="รายรับสุทธิ" value={props.summary.net} />
         <StatCard label="ยอดพร้อมถอน" value={props.summary.available} />
       </div>
+
+      <EarningsChart selectedMonth={props.monthValue} />
       <div className="grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)]">
         <input type="month" value={props.monthValue} onChange={(event) => props.setMonthValue(event.target.value)} className={inputClassName} />
         <select value={props.novelId} onChange={(event) => props.setNovelId(event.target.value)} className={inputClassName}>
@@ -509,20 +567,10 @@ function renderEarningsPanel(props: { monthValue: string; setMonthValue: (value:
           {props.rows.map((row) => <div key={row.id} className="grid grid-cols-[minmax(200px,1.6fr)_120px_120px_140px_140px] gap-4 px-4 py-4 text-sm"><span className="font-semibold">{row.title}</span><span>{formatCompactNumber(row.unlocks)}</span><span>{formatCompactNumber(row.readers)}</span><span>{row.gross.toFixed(2)} Gold</span><span className="font-semibold text-[var(--color-brand-strong)]">{row.net.toFixed(2)} Gold</span></div>)}
         </div>
       </div>
-      <div className="grid gap-4 xl:grid-cols-[1fr_1.15fr]">
-        <form onSubmit={props.onWithdraw} className="rounded-[1.5rem] border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-4">
-          <h3 className="text-lg font-semibold">ขอถอนเงิน</h3>
-          <div className="mt-4 space-y-3">
-            <Field label="ยอดถอนเงิน"><input type="number" min="0" step="0.01" value={props.withdrawAmount} onChange={(event) => props.setWithdrawAmount(event.target.value)} className={inputClassName} placeholder="1000.00" /></Field>
-            <Field label="หมายเหตุ"><textarea value={props.withdrawNote} onChange={(event) => props.setWithdrawNote(event.target.value)} rows={4} className={`${inputClassName} resize-y`} placeholder="หมายเหตุถึงทีมบัญชี" /></Field>
-            <button type="submit" className="rounded-[1rem] bg-[var(--color-brand)] px-5 py-3 text-sm font-semibold text-white">ขอถอนเงิน</button>
-          </div>
-        </form>
-        <div className="rounded-[1.5rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-          <h3 className="text-lg font-semibold">ประวัติขอถอนเงิน</h3>
-          <div className="mt-4 space-y-3">
-            {props.withdrawRequests.map((item) => <div key={item.id} className="rounded-[1.1rem] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-4 py-3"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-sm font-semibold">{item.amount} Gold</p><p className="mt-1 text-xs text-[var(--color-muted)]">{formatShortDate(item.requestedAt)} · {item.note}</p></div><Badge>{formatWithdrawalStatus(item.status)}</Badge></div></div>)}
-          </div>
+      <div className="rounded-[1.5rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+        <h3 className="text-lg font-semibold">ประวัติขอถอนเงิน</h3>
+        <div className="mt-4 space-y-3">
+          {props.withdrawRequests.map((item) => <div key={item.id} className="rounded-[1.1rem] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-4 py-3"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-sm font-semibold">{item.amount} Gold</p><p className="mt-1 text-xs text-[var(--color-muted)]">{formatShortDate(item.requestedAt)} · {item.note}</p></div><Badge>{formatWithdrawalStatus(item.status)}</Badge></div></div>)}
         </div>
       </div>
     </div>
@@ -533,8 +581,17 @@ function Alert({ tone, children }: { tone: "success" | "error"; children: ReactN
   return <div className={`rounded-[1.25rem] px-5 py-4 text-sm ${tone === "success" ? "border border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "border border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300"}`}>{children}</div>;
 }
 
-function SectionHead({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
-  return <div><p className="text-sm font-semibold text-[var(--color-brand-strong)]">{eyebrow}</p><h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h2><p className="mt-2 text-sm leading-7 text-[var(--color-muted)]">{description}</p></div>;
+function SectionHead({ eyebrow, title, description, action }: { eyebrow: string; title: string; description: string; action?: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p className="text-sm font-semibold text-[var(--color-brand-strong)]">{eyebrow}</p>
+        <h2 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h2>
+        <p className="mt-2 text-sm leading-7 text-[var(--color-muted)]">{description}</p>
+      </div>
+      {action ? <div>{action}</div> : null}
+    </div>
+  );
 }
 
 function StatCard({ label, value }: { label: string; value: string }) {
@@ -557,30 +614,99 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   return <label className="space-y-2 text-sm font-medium"><span>{label}</span>{children}</label>;
 }
 
+function WithdrawalModal({ 
+  open, 
+  onClose, 
+  amount, 
+  setAmount, 
+  note, 
+  setNote, 
+  available, 
+  onSubmit 
+}: { 
+  open: boolean; 
+  onClose: () => void; 
+  amount: string;
+  setAmount: (val: string) => void;
+  note: string;
+  setNote: (val: string) => void;
+  available: string;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/40 backdrop-blur-md px-4 py-6">
+      <div 
+        className="relative w-full max-w-lg rounded-[2.5rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 sm:p-8 shadow-2xl animate-in fade-in zoom-in duration-300"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-6">
+          <p className="text-sm font-semibold text-[var(--color-brand-strong)] uppercase tracking-[0.12em]">Withdraw Funds</p>
+          <h2 className="mt-1 text-2xl font-semibold tracking-tight">ถอนเงินรายได้</h2>
+          <p className="mt-2 text-sm text-[var(--color-muted)]">
+            ยอดเงินที่สามารถถอนได้ปัจจุบันคือ <span className="font-bold text-[var(--color-brand-strong)]">{available} Gold</span>
+          </p>
+        </div>
+
+        <form onSubmit={onSubmit} className="space-y-5">
+          <Field label="ระบุจำนวน Gold ที่ต้องการถอน">
+            <div className="relative">
+              <input 
+                type="number" 
+                min="0" 
+                step="0.1"
+                value={amount} 
+                onChange={(e) => setAmount(e.target.value)} 
+                className={inputClassName} 
+                placeholder="0.00"
+                required
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-[var(--color-muted)]">Gold</span>
+            </div>
+            <p className="text-[11px] text-[var(--color-muted)]">คำนวณเป็นเงินบาทโดยประมาณ: {amount ? (Number(amount) / 10).toFixed(2) : "0.00"} บาท</p>
+          </Field>
+
+          <Field label="หมายเหตุ (ถ้ามี)">
+            <textarea 
+              value={note} 
+              onChange={(e) => setNote(e.target.value)} 
+              rows={3} 
+              className={`${inputClassName} resize-none`} 
+              placeholder="เช่น ชื่อบัญชีธนาคาร หรือสาขา..."
+            />
+          </Field>
+
+          <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:justify-end">
+            <button 
+              type="button" 
+              onClick={onClose}
+              className="rounded-[1.25rem] border border-[var(--color-border)] px-6 py-3 text-sm font-semibold transition hover:bg-[var(--color-surface-muted)]"
+            >
+              ยกเลิก
+            </button>
+            <button 
+              type="submit" 
+              className="rounded-[1.25rem] bg-[var(--color-brand)] px-8 py-3 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(66,185,131,0.22)] transition hover:scale-105"
+            >
+              ยืนยันคำขอถอนเงิน
+            </button>
+          </div>
+        </form>
+
+        <button 
+          onClick={onClose}
+          className="absolute right-6 top-6 flex h-10 w-10 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-muted)] text-[var(--color-muted)] transition hover:scale-110"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function formatCompactNumber(value: number) {
   return new Intl.NumberFormat("th-TH", { notation: "compact" }).format(value);
-}
-
-function formatShortDate(value: string) {
-  return new Intl.DateTimeFormat("th-TH", { day: "numeric", month: "short", year: "numeric" }).format(new Date(value));
-}
-
-function formatKycStatus(status: "draft" | "pending" | "verified") {
-  if (status === "verified") return "ยืนยันแล้ว";
-  if (status === "pending") return "รอตรวจสอบ";
-  return "ยังไม่ส่ง";
-}
-
-function formatStatus(status: WriterNovelItem["status"]) {
-  if (status === "completed") return "Completed";
-  if (status === "on_hold") return "Paused";
-  return "Ongoing";
-}
-
-function formatWithdrawalStatus(status: WithdrawalItem["status"]) {
-  if (status === "approved") return "อนุมัติแล้ว";
-  if (status === "transferred") return "โอนแล้ว";
-  return "รอดำเนินการ";
 }
 
 function currentMonthValue() {

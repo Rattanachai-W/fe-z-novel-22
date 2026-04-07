@@ -16,6 +16,8 @@ import type { UserBase, Wallet } from "@/lib/types/api";
 
 type AuthMode = "login" | "register";
 
+type ThemeMode = "light" | "dark";
+
 type AppContextValue = {
   authModalOpen: boolean;
   authMode: AuthMode;
@@ -27,6 +29,8 @@ type AppContextValue = {
   walletPending: boolean;
   bookmarks: string[];
   globalMessage: string | null;
+  theme: ThemeMode;
+  toggleTheme: () => void;
   openAuthModal: (mode?: AuthMode) => void;
   closeAuthModal: () => void;
   login: (payload: { email: string; password: string }) => Promise<boolean>;
@@ -50,6 +54,7 @@ const AppContext = createContext<AppContextValue | null>(null);
 const STORAGE_KEYS = {
   token: "dino_token",
   user: "dino_user",
+  theme: "dino_theme",
 };
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
@@ -63,6 +68,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [walletPending, setWalletPending] = useState(false);
   const [bookmarks, setBookmarks] = useState<string[]>([]);
   const [globalMessage, setGlobalMessage] = useState<string | null>(null);
+  const [theme, setTheme] = useState<ThemeMode>("light");
 
   const syncSession = useEffectEvent(async (sessionToken: string, nextUser: UserBase) => {
     persistSession(sessionToken, nextUser);
@@ -78,6 +84,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const storedToken = window.localStorage.getItem(STORAGE_KEYS.token);
     const rawUser = window.localStorage.getItem(STORAGE_KEYS.user);
+    const storedTheme = window.localStorage.getItem(STORAGE_KEYS.theme) as ThemeMode | null;
+
+    const nextTheme: ThemeMode =
+      storedTheme === "light" || storedTheme === "dark"
+        ? storedTheme
+        : window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+
+    setTheme(nextTheme);
+    document.documentElement.classList.toggle("dark", nextTheme === "dark");
+    document.documentElement.classList.toggle("light", nextTheme === "light");
 
     if (!storedToken || !rawUser) {
       return;
@@ -282,6 +300,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }
 
+  function toggleTheme() {
+    const nextTheme: ThemeMode = theme === "dark" ? "light" : "dark";
+    window.localStorage.setItem(STORAGE_KEYS.theme, nextTheme);
+    setTheme(nextTheme);
+    document.documentElement.classList.toggle("dark", nextTheme === "dark");
+    document.documentElement.classList.toggle("light", nextTheme === "light");
+  }
+
   const value: AppContextValue = {
     authModalOpen,
     authMode,
@@ -293,6 +319,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     walletPending,
     bookmarks,
     globalMessage,
+    theme,
+    toggleTheme,
     openAuthModal,
     closeAuthModal,
     login,

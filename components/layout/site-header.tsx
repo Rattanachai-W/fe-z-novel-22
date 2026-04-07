@@ -31,7 +31,7 @@ export function SiteHeader({
 }: SiteHeaderProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { globalMessage, openAuthModal, logout, user, wallet, walletPending } = useApp();
+  const { globalMessage, openAuthModal, logout, user, wallet, walletPending, theme, toggleTheme } = useApp();
 
   const isReaderPage = pathname.includes("/chapters/");
 
@@ -93,6 +93,14 @@ export function SiteHeader({
                   <AppIcon name={action.icon} />
                 </Link>
               ))}
+              <button
+                type="button"
+                onClick={toggleTheme}
+                aria-label={theme === "dark" ? "Switch to day mode" : "Switch to dark mode"}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-surface-muted)] text-sm font-semibold text-slate-700 transition hover:bg-slate-200 dark:text-slate-100 dark:hover:bg-slate-700"
+              >
+                <AppIcon name={theme === "dark" ? "sun" : "moon"} />
+              </button>
             </div>
 
             <Menu.Root positioning={{ placement: "bottom-end", gutter: 10 }}>
@@ -219,6 +227,14 @@ export function SiteHeader({
           >
             {primaryLabel}
           </Link>
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={theme === "dark" ? "Switch to day mode" : "Switch to dark mode"}
+            className="flex h-10 min-w-[3rem] items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-semibold text-slate-700 transition hover:bg-[var(--color-surface-muted)] dark:text-slate-100 dark:hover:bg-slate-700"
+          >
+            <AppIcon name={theme === "dark" ? "sun" : "moon"} />
+          </button>
           {!user ? (
             <button
               type="button"
