@@ -31,7 +31,16 @@ export function UnlockChapterButton({
       }}
       className="mt-5 rounded-full bg-[var(--color-brand)] px-5 py-3 text-sm font-semibold text-white"
     >
-      {isPending ? "กำลังปลดล็อก..." : `ปลดล็อก ${coinPrice} Gold`}
+      <div className="flex items-center justify-center gap-2">
+        {isPending ? (
+          "กำลังปลดล็อก..."
+        ) : (
+          <>
+            <img src="/coin_logo.png" alt="Coin" className="w-5 h-5 object-contain brightness-0 invert" />
+            <span>ปลดล็อก {coinPrice} Gold</span>
+          </>
+        )}
+      </div>
     </button>
   );
 }

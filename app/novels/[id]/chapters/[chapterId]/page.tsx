@@ -7,6 +7,7 @@ import { ReaderViewportProvider } from "@/components/reader/reader-viewport";
 import { SiteHeader } from "@/components/layout/site-header";
 import { ChapterComments } from "@/components/novels/chapter-comments";
 import { UnlockChapterButton } from "@/components/novels/unlock-chapter-button";
+import { ChapterLikeButton } from "@/components/novels/chapter-like-button";
 import { ReaderHistorySync } from "@/components/reader/reader-history-sync";
 import { getChapterById, getNovelById } from "@/lib/api/novels";
 
@@ -60,12 +61,13 @@ export default async function ChapterReaderPage({
               <div className="mt-4 flex flex-wrap gap-3 text-sm text-[var(--color-muted)]">
                 <span>โดย {novel.author?.username ?? "Unknown"}</span>
                 <span>•</span>
-                <span>
+                <span className="flex items-center gap-1">
+                  <img src="/coin_logo.png" alt="Coin" className="w-4 h-4 object-contain" />
                   {chapter.is_free
                     ? "เปิดอ่านฟรี"
                     : chapter.locked
-                      ? `ล็อกอยู่ ${chapter.coin_price} Gold`
-                      : `ปลดล็อกแล้ว ${chapter.coin_price} Gold`}
+                      ? `${chapter.coin_price} Gold`
+                      : `ปลดล็อกแล้ว (${chapter.coin_price} Gold)`}
                 </span>
               </div>
             </header>
@@ -95,6 +97,10 @@ export default async function ChapterReaderPage({
             </div>
           </article>
         </ReaderControls>
+
+        <div className="flex justify-center mt-2 mb-8">
+          <ChapterLikeButton chapterId={chapter.id} />
+        </div>
 
         <nav className="mt-6 grid gap-4 sm:grid-cols-2">
           <div className="card-surface p-5">

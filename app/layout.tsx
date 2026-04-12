@@ -3,6 +3,7 @@ import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { AuthModal } from "@/components/auth/auth-modal";
 import { AppProvider } from "@/components/providers/app-provider";
+import { Toaster } from "sonner";
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, Noto_Sans_Thai } from "next/font/google";
 import "./globals.css";
@@ -74,6 +75,7 @@ export default function RootLayout({
         <AppProvider>
           {children}
           <AuthModal />
+          <Toaster position="top-center" richColors />
         </AppProvider>
         <Analytics />
         <SpeedInsights />

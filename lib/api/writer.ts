@@ -63,6 +63,7 @@ export function createChapter(token: string, payload: CreateChapterPayload) {
   });
 }
 
+// @TODO: [PENDING API] ฟังก์ชันนี้ยังไม่มี API รองรับใน API-SPACE.md 
 export function updateNovel(token: string, novelId: string, payload: UpdateNovelPayload) {
   return apiFetch<{ message: string; novel?: Novel }>(`/novels/${novelId}`, {
     method: "PUT",
@@ -91,6 +92,7 @@ export function updateChapter(token: string, chapterId: string, payload: UpdateC
   });
 }
 
+// @TODO: [PENDING API] ฟังก์ชันนี้ยังไม่มี API รองรับใน API-SPACE.md 
 export function deleteChapter(token: string, chapterId: string) {
   return apiFetch<{ message: string }>(`/novels/chapters/${chapterId}`, {
     method: "DELETE",
@@ -103,6 +105,7 @@ export function deleteChapter(token: string, chapterId: string) {
   });
 }
 
+// @TODO: [PENDING API] ฟังก์ชันนี้ยังไม่มี API รองรับใน API-SPACE.md 
 export function deleteNovel(token: string, novelId: string) {
   return apiFetch<{ message: string }>(`/novels/${novelId}`, {
     method: "DELETE",
@@ -115,6 +118,7 @@ export function deleteNovel(token: string, novelId: string) {
   });
 }
 
+// @TODO: [PENDING API] ฟังก์ชันนี้ยังไม่มี API รองรับใน API-SPACE.md 
 export async function uploadNovelCover(file: File) {
   const formData = new FormData();
   formData.append("file", file);
@@ -130,4 +134,27 @@ export async function uploadNovelCover(file: File) {
   }
 
   return (await response.json()) as UploadNovelCoverResponse;
+}
+
+// API ใหม่ตาม `API-SPACE.md`: GET /novels/my/novels
+export function getMyNovels(token: string, page = 1, limit = 10, status = "") {
+  return apiFetch<{ data: Novel[]; pagination: any }>(
+    `/novels/my/novels?page=${page}&limit=${limit}&status=${status}`, 
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      fallbackData: { data: [], pagination: {} },
+    }
+  );
+}
+
+// API ใหม่ตาม `API-SPACE.md`: GET /novels/my/stats
+export function getMyStats(token: string) {
+  return apiFetch<any>("/novels/my/stats", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    fallbackData: { view_count: 0, follower_count: 0, rating: 0 },
+  });
 }

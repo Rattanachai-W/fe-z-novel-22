@@ -8,6 +8,7 @@ import { useApp } from "@/components/providers/app-provider";
 import { AppIcon } from "@/components/ui/app-icon";
 import { NovelEditModal } from "@/components/writer/novel-edit-modal";
 import { createNovel, deleteNovel, updateNovel, uploadNovelCover, createChapter } from "@/lib/api/writer";
+import { createWriterWithdrawal } from "@/lib/api/financial";
 import type { WriterNovelItem } from "@/lib/writer/dashboard";
 import { getNewNovelTemplate, formatShortDate, formatKycStatus, formatWithdrawalStatus } from "@/lib/writer/utils";
 import { EarningsChart } from "@/components/writer/earnings-chart";
@@ -74,6 +75,7 @@ export function WriterStudio({ mode, novels }: WriterStudioProps) {
     { id: "wd-001", amount: "1200.00", status: "pending", requestedAt: new Date().toISOString(), note: "ยอดเดือนนี้รอบแรก" },
     { id: "wd-000", amount: "980.00", status: "transferred", requestedAt: "2026-02-28T09:10:00.000Z", note: "โอนแล้ว" },
   ]);
+  const [withdrawPending, startWithdrawTransition] = useTransition();
   const isWriter = user?.role === "author" || user?.role === "admin";
 
   useEffect(() => setManagedNovels(novels), [novels]);
@@ -214,14 +216,22 @@ export function WriterStudio({ mode, novels }: WriterStudioProps) {
       return;
     }
     setError(null);
-    setWithdrawRequests((current) => [
-      { id: `wd-${Date.now()}`, amount: Number(withdrawAmount).toFixed(2), status: "pending", requestedAt: new Date().toISOString(), note: withdrawNote || "คำขอใหม่" },
-      ...current,
-    ]);
-    setWithdrawAmount("");
-    setWithdrawNote("");
-    setIsWithdrawModalOpen(false);
-    setMessage("ส่งคำขอถอนเงินแล้ว");
+    
+    startWithdrawTransition(async () => {
+      try {
+        const res = await createWriterWithdrawal(token!, { goldAmount: Number(withdrawAmount) });
+        setWithdrawRequests((current) => [
+          { id: `wd-${Date.now()}`, amount: Number(withdrawAmount).toFixed(2), status: "pending", requestedAt: new Date().toISOString(), note: withdrawNote || "คำขอใหม่" },
+          ...current,
+        ]);
+        setWithdrawAmount("");
+        setWithdrawNote("");
+        setIsWithdrawModalOpen(false);
+        setMessage(res.message || "ส่งคำขอถอนเงินแล้ว");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "ส่งคำขอถอนเงินล้มเหลว");
+      }
+    });
   }
 
   return (
@@ -247,6 +257,7 @@ export function WriterStudio({ mode, novels }: WriterStudioProps) {
         setNote={setWithdrawNote}
         available={incomeSummary.available}
         onSubmit={handleWithdraw}
+        isPending={withdrawPending}
       />
     </section>
   );
@@ -632,6 +643,7 @@ function WithdrawalModal({
   setNote: (val: string) => void;
   available: string;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  isPending: boolean;
 }) {
   if (!open) return null;
 
@@ -687,9 +699,10 @@ function WithdrawalModal({
             </button>
             <button 
               type="submit" 
-              className="rounded-[1.25rem] bg-[var(--color-brand)] px-8 py-3 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(66,185,131,0.22)] transition hover:scale-105"
+              disabled={isPending}
+              className="rounded-[1.25rem] bg-[var(--color-brand)] px-8 py-3 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(66,185,131,0.22)] transition hover:scale-105 disabled:opacity-50"
             >
-              ยืนยันคำขอถอนเงิน
+              {isPending ? "กำลังดำเนินการ..." : "ยืนยันคำขอถอนเงิน"}
             </button>
           </div>
         </form>

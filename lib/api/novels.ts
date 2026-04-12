@@ -52,19 +52,23 @@ export async function getChapterById(id: string) {
   });
 }
 
+// @TODO: [PENDING API] ฟังก์ชันนี้ยังไม่มี API รองรับใน API-SPACE.md ปัจจุบันใช้งาน mock
 export async function getFeaturedNovel() {
   const novels = await getNovelCatalog();
   return novels[0] ?? mockNovels[0];
 }
 
+// @TODO: [PENDING API] ฟังก์ชันนี้ยังไม่มี API รองรับใน API-SPACE.md ปัจจุบันใช้งาน mock
 export async function getTrendingTags(): Promise<Tag[]> {
   return mockTags;
 }
 
+// @TODO: [PENDING API] ฟังก์ชันนี้ยังไม่มี API รองรับใน API-SPACE.md ปัจจุบันใช้งาน mock
 export async function getHomePageMetrics(): Promise<HomeMetric[]> {
   return mockHomeMetrics;
 }
 
+// @TODO: [PENDING API] ฟังก์ชันนี้ยังไม่มี API รองรับใน API-SPACE.md ปัจจุบันใช้งาน mock
 export function getNovelMetadata() {
   return apiFetch<NovelMetadata>("/novels/metadata", {
     fallbackData: {
@@ -74,6 +78,7 @@ export function getNovelMetadata() {
   });
 }
 
+// @TODO: [PENDING API] ฟังก์ชันนี้ยังไม่มี API รองรับใน API-SPACE.md
 export function rateNovel(token: string, novelId: string, score: number) {
   return apiFetch<{ message: string; rating: number; rating_count: number }>(
     `/novels/${novelId}/rate`,
@@ -88,6 +93,7 @@ export function rateNovel(token: string, novelId: string, score: number) {
   );
 }
 
+// @TODO: [PENDING API] ฟังก์ชันนี้ยังไม่มี API รองรับใน API-SPACE.md
 export function getBookmarkStatus(token: string, novelId: string) {
   return apiFetch<{ bookmarked: boolean }>(`/novels/${novelId}/bookmark`, {
     headers: {
@@ -118,12 +124,24 @@ export function getReadingHistory(token: string) {
   });
 }
 
+// @TODO: [PENDING API] ฟังก์ชันนี้ยังไม่มี API รองรับใน API-SPACE.md (มีแต่ GET /novels/writers/:writerId/novels)
 export function getAuthorProfile(authorId: string) {
   return apiFetch<AuthorProfile | null>(`/novels/authors/${authorId}`, {
     fallbackData: null,
   });
 }
 
+// API ใหม่ตาม `API-SPACE.md`: GET /novels/writers/:writerId/novels
+export function getWriterNovels(writerId: string, page = 1, limit = 10) {
+  return apiFetch<{ data: Novel[]; pagination: any }>(
+    `/novels/writers/${writerId}/novels?page=${page}&limit=${limit}`,
+    {
+      fallbackData: { data: [], pagination: { current_page: 1, total_pages: 1 } },
+    }
+  );
+}
+
+// @TODO: [PENDING API] ฟังก์ชันนี้ยังไม่มี API รองรับใน API-SPACE.md
 export function toggleAuthorFollow(token: string, authorId: string) {
   return apiFetch<{ followed: boolean; message: string }>(
     `/novels/authors/${authorId}/follow`,
@@ -136,6 +154,7 @@ export function toggleAuthorFollow(token: string, authorId: string) {
   );
 }
 
+// @TODO: [PENDING API] ฟังก์ชันนี้ยังไม่มี API รองรับใน API-SPACE.md
 export function getAuthorFollowStatus(token: string, authorId: string) {
   return apiFetch<{ followed: boolean }>(`/novels/authors/${authorId}/follow`, {
     headers: {
@@ -145,6 +164,7 @@ export function getAuthorFollowStatus(token: string, authorId: string) {
   });
 }
 
+// @TODO: [PENDING API] ฟังก์ชันนี้ยังไม่มี API รองรับใน API-SPACE.md
 export function getFollowingAuthors(token: string) {
   return apiFetch<Array<{ id: string; username: string }>>("/novels/my/following", {
     headers: {

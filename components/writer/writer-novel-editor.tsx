@@ -495,7 +495,14 @@ export function WriterNovelEditor({ novel, onSave, onClose, isPage = false }: Wr
                           </p>
                         </div>
                         <Badge tone={chapter.isFree ? "soft" : "default"}>
-                          {chapter.isFree ? "ฟรี" : `${chapter.coinPrice} Gold`}
+                          {chapter.isFree ? (
+                            "ฟรี"
+                          ) : (
+                            <div className="flex items-center gap-1">
+                              <img src="/coin_logo.png" alt="Coin" className="w-3.5 h-3.5 object-contain" />
+                              <span>{chapter.coinPrice} Gold</span>
+                            </div>
+                          )}
                         </Badge>
                       </div>
                     </button>
@@ -607,9 +614,14 @@ export function WriterNovelEditor({ novel, onSave, onClose, isPage = false }: Wr
                       </Field>
 
                       <div className="rounded-[1rem] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-4 py-3 text-sm text-[var(--color-muted)]">
-                        {activeChapter.isFree
-                          ? "ตอนนี้เปิดอ่านฟรี ผู้อ่านทุกคนเข้าถึงได้ทันที"
-                          : `ตอนนี้เป็นตอนล็อก ราคา ${activeChapter.coinPrice} Gold`}
+                        {activeChapter.isFree ? (
+                          "ตอนนี้เปิดอ่านฟรี ผู้อ่านทุกคนเข้าถึงได้ทันที"
+                        ) : (
+                          <div className="flex items-center gap-1.5">
+                            <img src="/coin_logo.png" alt="Coin" className="w-4 h-4 object-contain" />
+                            <span>ตอนนี้เป็นตอนล็อก ราคา {activeChapter.coinPrice} Gold</span>
+                          </div>
+                        )}
                       </div>
                     </div>
 

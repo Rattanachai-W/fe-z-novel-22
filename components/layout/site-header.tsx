@@ -138,11 +138,11 @@ export function SiteHeader({
                     <div className="mt-3 space-y-2">
                       {[
                         { label: "Gold", value: walletPending ? "..." : `${wallet?.gold ?? 0}` },
-                        { label: "Egg", value: walletPending ? "..." : `${wallet?.egg ?? 0}` },
-                        {
-                          label: "Ticket",
-                          value: walletPending ? "..." : `${wallet?.ticket ?? 0}`,
-                        },
+                        // { label: "Egg", value: walletPending ? "..." : `${wallet?.egg ?? 0}` },
+                        // {
+                        //   label: "Ticket",
+                        //   value: walletPending ? "..." : `${wallet?.ticket ?? 0}`,
+                        // },
                       ].map((item, index) => (
                         <div
                           key={item.label}
@@ -165,7 +165,10 @@ export function SiteHeader({
                         href="/top-up"
                         className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-brand)] px-3 py-2.5 text-sm font-bold text-white shadow-[0_4px_10px_rgba(66,185,131,0.3)] transition hover:-translate-y-0.5 hover:bg-[#3ba273]"
                       >
-                        🪙 เติมเหรียญ
+                        <div className="flex items-center gap-2">
+                          <img src="/coin_logo.png" alt="Coin" className="w-5 h-5 object-contain" />
+                          <span>เติมเหรียญ</span>
+                        </div>
                       </Link>
                     </Menu.Item>
                   </div>
